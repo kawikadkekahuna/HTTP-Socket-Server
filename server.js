@@ -7,7 +7,10 @@ var SOCKET_CONNECTED = 'connection';
 var SOCKET_CLOSE = 'close';
 var SOCKET_ERROR = 'error';
 var SOCKET_CHUNK = 'data';
+var HTTP_MODIFIED_CODE = 304;
 var HTTP_OKAY_CODE = 200;
+var HTTP_ERR_CODE = 404;
+var HTTP_NOT_FOUND = 'Not Found';
 var HTTP_OK = 'OK';
 
 function clientConnected(socket) {
@@ -37,38 +40,45 @@ function clientConnected(socket) {
 
 
   function generateHeadResponse(chunk, requestedFile) {
-    try {
+    var modfiedCheck = /(If-Modified-Since): \w+, \d+ \w+ \d+ \d+:\d+:\d+ GMT/g.exec(chunk);
 
-      var HTTP_SERVER_STATUS = /\HTTP\/\d.+/g.exec(chunk) + ' ' + HTTP_OKAY_CODE + ' ' + HTTP_OK;
+    try {
       var TIMESTAMP = 'Date: ' + new Date().toUTCString();
       var SERVER_NAME = 'Server: Kawika\'s Server 1.0';
       var CONTENT_TYPE = 'Content-Type:  text/html; charset=utf-8'
       var CONTENT_LENGTH = 'Content-Length: ' + fs.readFileSync(requestedFile, 'utf8').length;
       var CONNECTION_STATUS = 'Connection: closed';
+      if (!modfiedCheck) {
+        var HTTP_SERVER_STATUS = /\HTTP\/\d.+/g.exec(chunk) + ' ' + HTTP_OKAY_CODE + ' ' + HTTP_OK;
 
 
-      socket.write(HTTP_SERVER_STATUS + '\n');
-      socket.write(SERVER_NAME + '\n');
-      socket.write(TIMESTAMP + '\n');
-      socket.write(CONTENT_LENGTH.toString() + '\n');
-      socket.write(CONTENT_TYPE + '\n');
-      socket.write(CONNECTION_STATUS + '\n');
-      socket.destroy();
-
+        socket.write(HTTP_SERVER_STATUS + '\n');
+        socket.write(SERVER_NAME + '\n');
+        socket.write(TIMESTAMP + '\n');
+        socket.write(CONTENT_LENGTH.toString() + '\n');
+        socket.write(CONTENT_TYPE + '\n');
+        socket.write(CONNECTION_STATUS + '\n');
+        socket.write('If-Modified-Since : ' + new Date().toUTCString());
+        socket.destroy();
+      }else{
+        var HTTP_SERVER_STATUS = /\HTTP\/\d.+/g.exec(chunk) + ' ' + HTTP_MODIFIED_CODE + ' ' + HTTP_OK
+      }
     } catch (err) {
-      socket.write('File not found! ');
+      var HTTP_SERVER_STATUS = /\HTTP\/\d.+/g.exec(chunk) + ' ' + HTTP_ERR_CODE + ' ' + HTTP_NOT_FOUND;
+      socket.write(HTTP_SERVER_STATUS + '\n');
       socket.destroy();
+
     }
 
   }
 
   function generateBodyReponse(chunk, requestedFile) {
-    try{
-    var BODY = fs.readFileSync(requestedFile, 'utf8');
-    socket.write(BODY);
-    socket.destroy();
-      
-    }catch (err){
+    try {
+      var BODY = fs.readFileSync(requestedFile, 'utf8');
+      socket.write(BODY);
+      socket.destroy();
+
+    } catch (err) {
       socket.write('File not found!');
       socket.destroy();
     }
@@ -78,6 +88,7 @@ function clientConnected(socket) {
 
 var server = net.createServer(clientConnected);
 
-server.listen(PORT, function() {});
+server.listen(PORT, function() {
+  
+});
 
-server.on(SOCKET_CONNECTED, function(socket) {});
