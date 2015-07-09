@@ -15,55 +15,69 @@ function clientConnected(socket) {
 
   socket.on(SOCKET_CHUNK, function(chunk) {
     var checkRequest = /^\w+/g.exec(chunk);
+    var requestedFile = /\/\D\w+.html/g.exec(chunk) || 'index.html';
+    if (requestedFile !== 'index.html') {
+
+      requestedFile = requestedFile[0].replace('/', '');
+    }
 
     switch (checkRequest[0]) {
 
       case 'GET':
-        console.log(chunk);
+        generateBodyReponse(chunk, requestedFile);
 
         break;
 
       case 'HEAD':
-        generateHeadResponse(chunk);
+        generateHeadResponse(chunk, requestedFile);
         break;
     }
   });
 
 
 
-  function generateHeadResponse(chunk) {
-    var HTTP_SERVER_STATUS = /\HTTP\/\d.+/g.exec(chunk)+' '+HTTP_OKAY_CODE+' ' + HTTP_OK;
-    var DESTINATION = /\/\D\w+.html/g.exec(chunk) || '/';
-    var TIMESTAMP = 'Date: '+ new Date().toUTCString();
-    var SERVER_NAME = 'Server: Kawika\'s Server 1.0';
-    var CONTENT_TYPE = 'text/html; charset=utf-8'
-    var CONNECTION_STATUS = 'Connection: closed';
-    var CONTENT_LENGTH;
-    var test;
-    fs.readFile('index.html', function(err, data) {
-      if (err) {
-        throw err;
-      }
-      CONTENT_LENGTH = 'Content Length: ' + Number(data.toString().length);
-      console.log(CONTENT_LENGTH);
-      test = CONTENT_LENGTH;
+  function generateHeadResponse(chunk, requestedFile) {
+    try {
 
-    });
-    process.stdout.write(HTTP_SERVER_STATUS+'\n');
-    // process.stdout.write(DESTINATION[0]+'\n');
-    process.stdout.write(TIMESTAMP+'\n');
-    process.stdout.write(SERVER_NAME+'\n');
-    process.stdout.write(CONNECTION_STATUS+'\n');
-    // process.stdout.write(CONTENT_LENGTH);
-     console.log('CONTENT_LENGTH',test); 
+      var HTTP_SERVER_STATUS = /\HTTP\/\d.+/g.exec(chunk) + ' ' + HTTP_OKAY_CODE + ' ' + HTTP_OK;
+      var TIMESTAMP = 'Date: ' + new Date().toUTCString();
+      var SERVER_NAME = 'Server: Kawika\'s Server 1.0';
+      var CONTENT_TYPE = 'Content-Type:  text/html; charset=utf-8'
+      var CONTENT_LENGTH = 'Content-Length: ' + fs.readFileSync(requestedFile, 'utf8').length;
+      var CONNECTION_STATUS = 'Connection: closed';
+
+
+      socket.write(HTTP_SERVER_STATUS + '\n');
+      socket.write(SERVER_NAME + '\n');
+      socket.write(TIMESTAMP + '\n');
+      socket.write(CONTENT_LENGTH.toString() + '\n');
+      socket.write(CONTENT_TYPE + '\n');
+      socket.write(CONNECTION_STATUS + '\n');
+      socket.destroy();
+
+    } catch (err) {
+      socket.write('File not found! ');
+      socket.destroy();
+    }
+
+  }
+
+  function generateBodyReponse(chunk, requestedFile) {
+    try{
+    var BODY = fs.readFileSync(requestedFile, 'utf8');
+    socket.write(BODY);
+    socket.destroy();
+      
+    }catch (err){
+      socket.write('File not found!');
+      socket.destroy();
+    }
   }
 }
 
 
 var server = net.createServer(clientConnected);
 
-server.listen(PORT, function() {
-});
+server.listen(PORT, function() {});
 
-server.on(SOCKET_CONNECTED, function(socket) {
-});
+server.on(SOCKET_CONNECTED, function(socket) {});
