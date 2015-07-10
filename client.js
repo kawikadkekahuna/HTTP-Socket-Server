@@ -9,6 +9,10 @@ var SOCKET_RECEIVE_DATA = 'data';
 var SOCKET_REQUESTED_FILE;
 var SOCKET_REQUEST_TYPE;
 var SOCKET_HOST_NAME;
+var request = {
+  GET: 'GET',
+  HEAD: 'HEAD'
+}
 
 var socket = net.createConnection({
   port: PORT
@@ -28,7 +32,7 @@ socket.on(SOCKET_CONNECT, function() {
       SOCKET_REQUESTED_FILE = grabRequestedFile[0];
     }
 
-    if(grabHost){
+    if (grabHost) {
       SOCKET_HOST_NAME = grabHost[0]
     }
 
@@ -45,42 +49,28 @@ socket.on(SOCKET_CONNECT, function() {
   switch (SOCKET_REQUEST_TYPE) {
 
     case '-h':
-      generateHeadRequest(SOCKET_REQUESTED_FILE);
+      generateRequest(SOCKET_REQUESTED_FILE, request.HEAD);
       break;
 
     case '-b':
-      generateBodyRequest(SOCKET_REQUESTED_FILE);
+      generateRequest(SOCKET_REQUESTED_FILE, request.GET);
       break;
-
 
   }
 
-
 });
 
-function generateHeadRequest(requestedFile) {
-  var http_status = 'HEAD ' + requestedFile + ' HTTP/1.1'
-  var host_name = 'Host: ' + SOCKET_HOST_NAME;
-  var user_agent = 'User Agent: Kawika\'s Curler/1.0';
-  var accept_status = '*/*';
-  socket.write(http_status+'\n');
-  socket.write(host_name+'\n');
-  socket.write(user_agent+'\n');
-  socket.write(accept_status+'\n');
+function generateRequest(requestedFile, requestType) {
+  var requestResponse = {
+    http_status: requestType + ' ' + requestedFile + ' HTTP/1.1' + '\n',
+    host_name: 'Host: ' + SOCKET_HOST_NAME + '\n',
+    user_agent: 'User Agent: Kawika\'s Curler/1.0' + '\n',
+    accept_status: '*/*'
+  }
+  for (var key in requestResponse) {
+    socket.write(requestResponse[key]);
+  }
 }
-
-function generateBodyRequest(requestedFile) {
-  var http_status = 'GET ' + requestedFile + ' HTTP/1.1'
-  var host_name = 'Host: ' + SOCKET_HOST_NAME;
-  var user_agent = 'User Agent: Kawika\'s Curler/1.0';
-  var accept_status = '*/*';
-  socket.write(http_status+'\n');
-  socket.write(host_name+'\n');
-  socket.write(user_agent+'\n');
-  socket.write(accept_status+'\n');
-}
-
-
 
 
 socket.on(SOCKET_DISCONNET, function() {})
