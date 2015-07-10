@@ -19,20 +19,23 @@ function clientConnected(socket) {
   socket.on(SOCKET_CHUNK, function(chunk) {
     console.log('chunk', chunk);
     var checkRequest = /^\w+/g.exec(chunk);
-    var requestedFile = /\/\D\w+.html/g.exec(chunk) || 'index.html';
-    if (requestedFile !== 'index.html') {
+    var requestedFile = /(\/\w+\.\D\S\w+)/g.exec(chunk) || 'index.html';
 
+    if (requestedFile !== 'index.html') {
       requestedFile = requestedFile[0].replace('/', '');
     }
 
     switch (checkRequest[0]) {
 
       case 'GET':
+        generateHeadResponse(chunk, requestedFile);
         generateBodyReponse(chunk, requestedFile);
+        socket.end();
         break;
 
       case 'HEAD':
         generateHeadResponse(chunk, requestedFile);
+        socket.end();
         break;
     }
   });
@@ -45,9 +48,13 @@ function clientConnected(socket) {
     try {
       var TIMESTAMP = 'Date: ' + new Date().toUTCString();
       var SERVER_NAME = 'Server: Kawika\'s Server 1.0';
-      var CONTENT_TYPE = 'Content-Type:  text/html; charset=utf-8'
+      var CONTENT_TYPE = 'Content-Type:  text/html; charset=utf-8';
+      if(requestedFile === 'styles.css'){
+        CONTENT_TYPE = 'Content-Type:  text/css; charset=utf-8';
+      }
       var CONTENT_LENGTH = 'Content-Length: ' + fs.readFileSync(requestedFile, 'utf8').length;
       var CONNECTION_STATUS = 'Connection: closed';
+
 
       if (!modfiedCheck) {
         var HTTP_SERVER_STATUS = /\HTTP\/\d.+/g.exec(chunk) + ' ' + HTTP_OKAY_CODE + ' ' + HTTP_OK;
@@ -56,9 +63,8 @@ function clientConnected(socket) {
         socket.write(TIMESTAMP + '\n');
         socket.write(CONTENT_LENGTH.toString() + '\n');
         socket.write(CONTENT_TYPE + '\n');
-        socket.write(CONNECTION_STATUS + '\n');
+        socket.write(CONNECTION_STATUS + '\n\n');
         // socket.write('If-Modified-Since : ' + new Date().toUTCString());
-        socket.end();
       } else {
         //fix modified check
         var HTTP_SERVER_STATUS = /\HTTP\/\d.+/g.exec(chunk) + ' ' + HTTP_MODIFIED_CODE + ' ' + HTTP_OK
@@ -67,21 +73,17 @@ function clientConnected(socket) {
     } catch (err) {
       var HTTP_SERVER_STATUS = /\HTTP\/\d.+/g.exec(chunk) + ' ' + HTTP_ERR_CODE + ' ' + HTTP_NOT_FOUND;
       socket.write(HTTP_SERVER_STATUS + '\n');
-      socket.end();
-
     }
 
   }
 
   function generateBodyReponse(chunk, requestedFile) {
     try {
-      var BODY = fs.readFileSync(requestedFile, 'utf8');
+      var BODY = fs.readFileSync(requestedFile)
       socket.write(BODY);
-      socket.end();
 
     } catch (err) {
       socket.write('File not found!');
-      socket.end();
     }
   }
 }
