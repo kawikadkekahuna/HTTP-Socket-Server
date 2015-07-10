@@ -12,16 +12,18 @@ var HTTP_OKAY_CODE = 200;
 var HTTP_ERR_CODE = 404;
 var HTTP_NOT_FOUND = 'Not Found';
 var HTTP_OK = 'OK';
+var SERVER_TIME = Date.now();
 
 function clientConnected(socket) {
   socket.setEncoding('utf8');
 
   socket.on(SOCKET_CHUNK, function(chunk) {
+     console.log('chunk',chunk); 
     var checkRequest = /^\w+/g.exec(chunk);
     var requestedFile = /\/\D\w+.html/g.exec(chunk) || 'index.html';
     if (requestedFile !== 'index.html') {
 
-      requestedFile = requestedFile[0].replace('/', '');
+      requestedFile = requestedFile[0].replace('/', ''); 
     }
 
     switch (checkRequest[0]) {
@@ -50,8 +52,6 @@ function clientConnected(socket) {
       var CONNECTION_STATUS = 'Connection: closed';
       if (!modfiedCheck) {
         var HTTP_SERVER_STATUS = /\HTTP\/\d.+/g.exec(chunk) + ' ' + HTTP_OKAY_CODE + ' ' + HTTP_OK;
-
-
         socket.write(HTTP_SERVER_STATUS + '\n');
         socket.write(SERVER_NAME + '\n');
         socket.write(TIMESTAMP + '\n');
