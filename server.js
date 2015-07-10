@@ -16,21 +16,19 @@ var SERVER_TIME = Date.now();
 
 function clientConnected(socket) {
   socket.setEncoding('utf8');
-
   socket.on(SOCKET_CHUNK, function(chunk) {
-     console.log('chunk',chunk); 
+    console.log('chunk', chunk);
     var checkRequest = /^\w+/g.exec(chunk);
     var requestedFile = /\/\D\w+.html/g.exec(chunk) || 'index.html';
     if (requestedFile !== 'index.html') {
 
-      requestedFile = requestedFile[0].replace('/', ''); 
+      requestedFile = requestedFile[0].replace('/', '');
     }
 
     switch (checkRequest[0]) {
 
       case 'GET':
         generateBodyReponse(chunk, requestedFile);
-
         break;
 
       case 'HEAD':
@@ -50,6 +48,7 @@ function clientConnected(socket) {
       var CONTENT_TYPE = 'Content-Type:  text/html; charset=utf-8'
       var CONTENT_LENGTH = 'Content-Length: ' + fs.readFileSync(requestedFile, 'utf8').length;
       var CONNECTION_STATUS = 'Connection: closed';
+
       if (!modfiedCheck) {
         var HTTP_SERVER_STATUS = /\HTTP\/\d.+/g.exec(chunk) + ' ' + HTTP_OKAY_CODE + ' ' + HTTP_OK;
         socket.write(HTTP_SERVER_STATUS + '\n');
@@ -58,15 +57,17 @@ function clientConnected(socket) {
         socket.write(CONTENT_LENGTH.toString() + '\n');
         socket.write(CONTENT_TYPE + '\n');
         socket.write(CONNECTION_STATUS + '\n');
-        socket.write('If-Modified-Since : ' + new Date().toUTCString());
-        socket.destroy();
-      }else{
+        // socket.write('If-Modified-Since : ' + new Date().toUTCString());
+        socket.end();
+      } else {
+        //fix modified check
         var HTTP_SERVER_STATUS = /\HTTP\/\d.+/g.exec(chunk) + ' ' + HTTP_MODIFIED_CODE + ' ' + HTTP_OK
       }
+
     } catch (err) {
       var HTTP_SERVER_STATUS = /\HTTP\/\d.+/g.exec(chunk) + ' ' + HTTP_ERR_CODE + ' ' + HTTP_NOT_FOUND;
       socket.write(HTTP_SERVER_STATUS + '\n');
-      socket.destroy();
+      socket.end();
 
     }
 
@@ -76,11 +77,11 @@ function clientConnected(socket) {
     try {
       var BODY = fs.readFileSync(requestedFile, 'utf8');
       socket.write(BODY);
-      socket.destroy();
+      socket.end();
 
     } catch (err) {
       socket.write('File not found!');
-      socket.destroy();
+      socket.end();
     }
   }
 }
@@ -89,6 +90,5 @@ function clientConnected(socket) {
 var server = net.createServer(clientConnected);
 
 server.listen(PORT, function() {
-  
-});
 
+});
