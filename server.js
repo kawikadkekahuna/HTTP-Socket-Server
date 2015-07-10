@@ -19,11 +19,8 @@ function clientConnected(socket) {
   socket.on(SOCKET_CHUNK, function(chunk) {
     console.log('chunk', chunk);
     var checkRequest = /^\w+/g.exec(chunk);
-    var requestedFile = /(\/\w+\.\D\S\w+)/g.exec(chunk) || 'index.html';
-
-    if (requestedFile !== 'index.html') {
-      requestedFile = requestedFile[0].replace('/', '');
-    }
+    var requestedFile = /\w+\D\.\D\S\w+/g.exec(chunk) || 'index.html';
+    requestedFile = requestedFile[0];
 
     switch (checkRequest[0]) {
 

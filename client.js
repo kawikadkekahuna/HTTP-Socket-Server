@@ -37,28 +37,21 @@ socket.on(SOCKET_CONNECT, function() {
 
   SOCKET_REQUESTED_FILE = SOCKET_REQUESTED_FILE || '/';
   if (!SOCKET_REQUEST_TYPE) {
-    SOCKET_REQUEST_TYPE = 'all';
+    SOCKET_REQUEST_TYPE = '-b';
   } else {
     SOCKET_REQUEST_TYPE = SOCKET_REQUEST_TYPE[0];
   }
-  // console.log('SOCKET_REQUESTED_FILE',SOCKET_REQUESTED_FILE); 
-  // console.log('SOCKET_REQUEST_TYPE',SOCKET_REQUEST_TYPE); 
 
   switch (SOCKET_REQUEST_TYPE) {
 
     case '-h':
-      // console.log('dispaly head');
       generateHeadRequest(SOCKET_REQUESTED_FILE);
-      // console.log('generate success');
       break;
 
     case '-b':
-      console.log('dispaly body');
+      generateBodyRequest(SOCKET_REQUESTED_FILE);
       break;
 
-    case 'all':
-      console.log('display both head and body');
-      break;
 
   }
 
@@ -75,6 +68,18 @@ function generateHeadRequest(requestedFile) {
   socket.write(user_agent+'\n');
   socket.write(accept_status+'\n');
 }
+
+function generateBodyRequest(requestedFile) {
+  var http_status = 'GET ' + requestedFile + ' HTTP/1.1'
+  var host_name = 'Host: ' + SOCKET_HOST_NAME;
+  var user_agent = 'User Agent: Kawika\'s Curler/1.0';
+  var accept_status = '*/*';
+  socket.write(http_status+'\n');
+  socket.write(host_name+'\n');
+  socket.write(user_agent+'\n');
+  socket.write(accept_status+'\n');
+}
+
 
 
 
